@@ -10,41 +10,34 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #0f172a;
-  color: #e2e8f0;
+  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
 }
 
-.container {
+.card {
   width: 100%;
   max-width: 520px;
   background: #111827;
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
 h2 {
   text-align: center;
   color: #38bdf8;
-  margin-bottom: 20px;
 }
 
 input {
   width: 100%;
   padding: 12px;
-  margin-bottom: 10px;
+  margin: 8px 0;
   border-radius: 8px;
   border: 1px solid #334155;
   background: #0b1220;
   color: white;
-  outline: none;
-}
-
-input:focus {
-  border-color: #38bdf8;
 }
 
 button {
@@ -55,7 +48,6 @@ button {
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
-  color: #0f172a;
 }
 
 button:hover {
@@ -77,23 +69,21 @@ pre {
   font-size: 12px;
   max-height: 260px;
   overflow: auto;
-  border: 1px solid #334155;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="card">
   <h2>Medicare Lead Form</h2>
 
   <form id="leadForm">
-
-    <input type="text" id="first_name" placeholder="First Name" required>
-    <input type="text" id="last_name" placeholder="Last Name" required>
-    <input type="email" id="email" placeholder="Email Address" required>
-    <input type="text" id="caller_id" placeholder="Phone Number" required>
-    <input type="text" id="state" placeholder="State (e.g. MD)" required>
+    <input id="first_name" placeholder="First Name" required>
+    <input id="last_name" placeholder="Last Name">
+    <input id="email" placeholder="Email">
+    <input id="caller_id" placeholder="Phone Number" required>
+    <input id="state" placeholder="State">
 
     <button type="submit">Submit Lead</button>
   </form>
@@ -107,9 +97,6 @@ const form = document.getElementById("leadForm");
 const statusEl = document.getElementById("status");
 const output = document.getElementById("output");
 
-/**
- * Normalize phone for TrackDrive (CRITICAL FIX)
- */
 function normalizePhone(phone) {
   return phone.replace(/\D/g, "");
 }
@@ -117,7 +104,7 @@ function normalizePhone(phone) {
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  statusEl.innerText = "Submitting lead...";
+  statusEl.innerText = "Submitting...";
   output.textContent = "";
 
   const lead = {
@@ -131,24 +118,26 @@ form.addEventListener("submit", async (e) => {
   try {
     const res = await fetch("/submit-lead", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(lead)
     });
 
-    const data = await res.json();
+    const text = await res.text();
 
-    if (data.success) {
-      statusEl.innerText = "Lead Accepted ✅";
-    } else {
-      statusEl.innerText = "Lead Rejected ❌";
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      statusEl.innerText = "Invalid server response";
+      output.textContent = text;
+      return;
     }
 
+    statusEl.innerText = data.success ? "Lead Accepted ✅" : "Lead Rejected ❌";
     output.textContent = JSON.stringify(data, null, 2);
 
   } catch (err) {
-    statusEl.innerText = "Server Error ❌";
+    statusEl.innerText = "Request failed";
     output.textContent = err.message;
   }
 });
